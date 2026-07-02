@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>일차함수의 그래프와 기울기</title>
+<style>
+  :root{
+    --bg:#f4f8ff;
+    --card:#ffffff;
+    --text:#15304b;
+    --sub:#4f6780;
+    --blue:#1f78ff;
+    --red:#e74c3c;
+    --green:#0f9d58;
+    --grid:#d9e4f0;
+    --axis:#22364d;
+    --soft:#eef5ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:linear-gradient(180deg,#eef5ff 0%, #f9fbff 100%);
+    color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;
+  }
+  .wrap{
+    max-width:1280px;
+    margin:0 auto;
+    padding:18px;
+  }
+  h1{
+    margin:0 0 10px;
+    font-size:clamp(1.9rem,3vw,2.8rem);
+    line-height:1.2;
+  }
+  .subtitle{
+    font-size:clamp(1rem,1.8vw,1.2rem);
+    line-height:1.6;
+    color:var(--sub);
+    margin-bottom:16px;
+  }
+  .layout{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:16px;
+  }
+  @media (max-width:980px){
+    .layout{grid-template-columns:1fr}
+  }
+  .card{
+    background:var(--card);
+    border-radius:18px;
+    padding:16px;
+    box-shadow:0 10px 24px rgba(24,44,76,.08);
+  }
+  .graphArea{
+    width:100%;
+  }
+  canvas{
+    width:100%;
+    height:min(72vw,680px);
+    min-height:380px;
+    display:block;
+    background:#fff;
+    border:1px solid #e1eaf5;
+    border-radius:14px;
+  }
+  @media (max-width:980px){
+    canvas{
+      height:min(88vw,560px);
+      min-height:340px;
+    }
+  }
+  h2{
+    margin:0 0 12px;
+    font-size:clamp(1.3rem,2vw,1.7rem);
+  }
+  .row{margin:14px 0 18px}
+  .label{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-bottom:8px;
+    font-size:clamp(1rem,1.7vw,1.18rem);
+    font-weight:800;
+  }
+  .value{color:var(--blue)}
+  input[type="range"]{
+    width:100%;
+    height:14px;
+    accent-color:var(--blue);
+  }
+  .mini{
+    margin-top:6px;
+    color:var(--sub);
+    font-size:clamp(.95rem,1.5vw,1.03rem);
+    line-height:1.5;
+  }
+  .btns{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:10px;
+  }
+  button{
+    border:none;
+    border-radius:12px;
+    padding:12px 16px;
+    font-size:clamp(1rem,1.6vw,1.08rem);
+    font-weight:800;
+    cursor:pointer;
+    background:#eaf2ff;
+    color:#11418a;
+  }
+  button.primary{
+    background:var(--blue);
+    color:#fff;
+  }
+  button.reset{
+    background:#ffeaea;
+    color:#b42318;
+  }
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:12px;
+  }
+  .chip{
+    background:#f1f6fd;
+    color:#28425c;
+    border-radius:999px;
+    padding:10px 12px;
+    font-size:clamp(.95rem,1.5vw,1.03rem);
+    font-weight:800;
+  }
+  .box{
+    margin-top:12px;
+    padding:14px 16px;
+    border-radius:15px;
+    font-size:clamp(1rem,1.7vw,1.12rem);
+    line-height:1.6;
+  }
+  .message{
+    background:#f5f9ff;
+    border:1px solid #dbe8fb;
+  }
+  .compare{
+    background:#fffaf1;
+    border:1px solid #f7dfac;
+  }
+  .concept{
+    background:linear-gradient(180deg,#f7fff9,#effcf4);
+    border:1px solid #d4f0dc;
+  }
+  .legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 16px;
+    margin-top:10px;
+    color:#334e68;
+    font-size:clamp(.95rem,1.45vw,1rem);
+  }
+  .key{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .lineBlue{
+    width:32px;
+    border-top:4px solid var(--blue);
+  }
+  .lineRed{
+    width:32px;
+    border-top:4px dashed var(--red);
+  }
+  .foot{
+    margin-top:10px;
+    color:#5d7187;
+    font-size:clamp(.9rem,1.35vw,.98rem);
+  }
+  .formula{font-weight:900;color:#10305b}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>일차함수의 그래프와 기울기 탐구</h1>
+  <div class="subtitle">
+    <span class="formula">y = mx + b</span>에서 <strong>기울기 m</strong>과 <strong>y절편 b</strong>를 바꾸며 그래프를 관찰해 보세요.
+    <strong>양수 기울기</strong>와 <strong>음수 기울기</strong>를 모두 확인할 수 있습니다.
+  </div>
+
+  <div class="layout">
+    <section class="card">
+      <div class="graphArea">
+        <canvas id="graph"></canvas>
+      </div>
+      <div class="legend">
+        <span class="key"><span class="lineBlue"></span>일차함수 그래프</span>
+        <span class="key"><span class="lineRed"></span>같은 y값에서 y축까지의 가로거리</span>
+      </div>
+      <div class="foot">축과 눈금의 단위: 1칸 = 1</div>
+    </section>
+
+    <section class="card">
+      <h2>조작하기</h2>
+
+      <div class="row">
+        <div class="label">
+          <span>기울기 m</span>
+          <span class="value" id="mValue">1.0</span>
+        </div>
+        <input id="slope" type="range" min="-5" max="5" step="0.1" value="1">
+        <div class="mini">m이 양수이면 오른쪽으로 갈수록 올라가고, 음수이면 오른쪽으로 갈수록 내려갑니다.</div>
+      </div>
+
+      <div class="row">
+        <div class="label">
+          <span>y절편 b</span>
+          <span class="value" id="bValue">0.0</span>
+        </div>
+        <input id="intercept" type="range" min="-4" max="4" step="0.1" value="0">
+        <div class="mini">b를 바꾸면 그래프가 위아래로 이동합니다. b=0이면 원점을 지납니다.</div>
+      </div>
+
+      <div class="row">
+        <div class="label">
+          <span>관찰할 높이 y</span>
+          <span class="value" id="yValue">2.0</span>
+        </div>
+        <input id="targetY" type="range" min="-4" max="4" step="0.5" value="2">
+        <div class="mini">같은 y값에서 그래프가 y축에 얼마나 가까운지 확인해 보세요.</div>
+      </div>
+
+      <div class="btns">
+        <button data-m="-4">음수 크게</button>
+        <button data-m="-1">음수 작게</button>
+        <button data-m="1">양수 작게</button>
+        <button data-m="4">양수 크게</button>
+        <button data-b="0">원점 지남</button>
+        <button data-b="2">위로 이동</button>
+        <button data-b="-2">아래로 이동</button>
+        <button class="primary" id="autoBtn">자동 비교</button>
+        <button class="reset" id="resetBtn">다시 시작</button>
+      </div>
+
+      <div class="chips">
+        <div class="chip" id="eqText">식: y = 1.0x + 0.0</div>
+        <div class="chip" id="pointText">지나는 점: (0, 0.0)</div>
+        <div class="chip" id="dirText">방향: 오른쪽으로 갈수록 올라감</div>
+        <div class="chip" id="steepText">가파름: 보통</div>
+      </div>
+
+      <div class="box message" id="message"></div>
+      <div class="box compare" id="compare"></div>
+      <div class="box concept">
+        <strong>확인할 개념</strong><br>
+        <strong>양수 기울기</strong>일 때 기울기가 커질수록 그래프는 더 가파르게 서고, <strong>같은 y값에서 보면 그래프가 y축에 가까워집니다.</strong><br>
+        <strong>음수 기울기</strong>도 마찬가지로 <strong>절댓값 |m|</strong>이 커질수록 더 가파르게 내려가며, <strong>같은 y값에서 보면 그래프가 y축에 가까워집니다.</strong><br><br>
+        원점을 지나지 않는 경우에도 식 <span class="formula">x = (y - b) ÷ m</span>로 생각하면, <strong>b를 고정</strong>하고 같은 y를 볼 때 <strong>|m|이 커질수록 |x|가 작아짐</strong>을 확인할 수 있습니다.
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('graph');
+  const ctx = canvas.getContext('2d');
+
+  const slopeInput = document.getElementById('slope');
+  const interceptInput = document.getElementById('intercept');
+  const targetYInput = document.getElementById('targetY');
+
+  const mValue = document.getElementById('mValue');
+  const bValue = document.getElementById('bValue');
+  const yValue = document.getElementById('yValue');
+
+  const eqText = document.getElementById('eqText');
+  const pointText = document.getElementById('pointText');
+  const dirText = document.getElementById('dirText');
+  const steepText = document.getElementById('steepText');
+  const message = document.getElementById('message');
+  const compare = document.getElementById('compare');
+
+  const resetBtn = document.getElementById('resetBtn');
+  const autoBtn = document.getElementById('autoBtn');
+
+  let autoTimer = null;
+
+  function f1(n){
+    const v = Math.abs(n) < 0.0001 ? 0 : n;
+    return v.toFixed(1);
+  }
+  function f2(n){
+    const v = Math.abs(n) < 0.0001 ? 0 : n;
+    return v.toFixed(2);
+  }
+
+  function resizeCanvas(){
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = Math.max(300, Math.floor(rect.width * ratio));
+    canvas.height = Math.max(300, Math.floor(rect.height * ratio));
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(ratio, ratio);
+    draw();
+  }
+
+  function graphInfo(){
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const pad = 40;
+    const range = 6;
+    const scaleX = (w - pad * 2) / (range * 2);
+    const scaleY = (h - pad * 2) / (range * 2);
+    const scale = Math.min(scaleX, scaleY);
+    return {w,h,pad,range,scale,ox:w/2,oy:h/2};
+  }
+
+  function toPx(x,y,g){
+    return {
+      x: g.ox + x * g.scale,
+      y: g.oy - y * g.scale
+    };
+  }
+
+  function clear(g){
+    ctx.clearRect(0,0,g.w,g.h);
+  }
+
+  function drawArrow(x,y,angle){
+    const s = 9;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(-s,-s/2);
+    ctx.lineTo(-s,s/2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawGrid(g){
+    ctx.save();
+    ctx.strokeStyle = '#d9e4f0';
+    ctx.lineWidth = 1;
+
+    for(let i=-g.range;i<=g.range;i++){
+      let p1 = toPx(i,-g.range,g);
+      let p2 = toPx(i,g.range,g);
+      ctx.beginPath();
+      ctx.moveTo(p1.x,p1.y);
+      ctx.lineTo(p2.x,p2.y);
+      ctx.stroke();
+
+      p1 = toPx(-g.range,i,g);
+      p2 = toPx(g.range,i,g);
+      ctx.beginPath();
+      ctx.moveTo(p1.x,p1.y);
+      ctx.lineTo(p2.x,p2.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = '#22364d';
+    ctx.fillStyle = '#22364d';
+    ctx.lineWidth = 2.4;
+
+    let p1 = toPx(-g.range,0,g);
+    let p2 = toPx(g.range,0,g);
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y);
+    ctx.lineTo(p2.x,p2.y);
+    ctx.stroke();
+
+    p1 = toPx(0,-g.range,g);
+    p2 = toPx(0,g.range,g);
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y);
+    ctx.lineTo(p2.x,p2.y);
+    ctx.stroke();
+
+    let p = toPx(g.range,0,g);
+    drawArrow(p.x,p.y,0);
+    p = toPx(0,g.range,g);
+    drawArrow(p.x,p.y,-Math.PI/2);
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = '#22364d';
+    ctx.font = '700 ' + Math.max(12, g.scale * 0.28) + 'px system-ui,sans-serif';
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for(let i=-g.range;i<=g.range;i++){
+      if(i!==0){
+        const p = toPx(i,0,g);
+        ctx.fillText(String(i), p.x, p.y + 6);
+      }
+    }
+
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for(let i=-g.range;i<=g.range;i++){
+      if(i!==0){
+        const p = toPx(0,i,g);
+        ctx.fillText(String(i), p.x - 6, p.y);
+      }
+    }
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    p = toPx(g.range,0,g);
+    ctx.fillText('x축', p.x - 24, p.y - 8);
+
+    p = toPx(0,g.range,g);
+    ctx.fillText('y축', p.x + 8, p.y + 20);
+    ctx.restore();
+  }
+
+  function lineIntersections(m,b,range){
+    const pts = [];
+
+    const yLeft = m * (-range) + b;
+    if(yLeft >= -range && yLeft <= range) pts.push({x:-range,y:yLeft});
+
+    const yRight = m * range + b;
+    if(yRight >= -range && yRight <= range) pts.push({x:range,y:yRight});
+
+    if(Math.abs(m) > 1e-9){
+      const xBottom = (-range - b) / m;
+      if(xBottom >= -range && xBottom <= range) pts.push({x:xBottom,y:-range});
+
+      const xTop = (range - b) / m;
+      if(xTop >= -range && xTop <= range) pts.push({x:xTop,y:range});
+    } else {
+      if(b >= -range && b <= range){
+        pts.push({x:-range,y:b});
+        pts.push({x:range,y:b});
+      }
+    }
+
+    const unique = [];
+    for(const p of pts){
+      let same = false;
+      for(const q of unique){
+        if(Math.abs(p.x-q.x)<1e-6 && Math.abs(p.y-q.y)<1e-6){
+          same = true;
+          break;
+        }
+      }
+      if(!same) unique.push(p);
+    }
+
+    if(unique.length < 2) return null;
+
+    let bestA = unique[0], bestB = unique[1];
+    let bestD = -1;
+
+    for(let i=0;i<unique.length;i++){
+      for(let j=i+1;j<unique.length;j++){
+        const d = (unique[i].x-unique[j].x)**2 + (unique[i].y-unique[j].y)**2;
+        if(d > bestD){
+          bestD = d;
+          bestA = unique[i];
+          bestB = unique[j];
+        }
+      }
+    }
+
+    return [bestA,bestB];
+  }
+
+  function drawFunction(m,b,g){
+    const seg = lineIntersections(m,b,g.range);
+    if(!seg) return;
+
+    const a = toPx(seg[0].x, seg[0].y, g);
+    const c = toPx(seg[1].x, seg[1].y, g);
+
+    ctx.save();
+    ctx.strokeStyle = '#1f78ff';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);
+    ctx.lineTo(c.x,c.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawTargetY(yVal,g){
+    const p1 = toPx(-g.range,yVal,g);
+    const p2 = toPx(g.range,yVal,g);
+
+    ctx.save();
+    ctx.setLineDash([5,6]);
+    ctx.strokeStyle = '#b8c7da';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y);
+    ctx.lineTo(p2.x,p2.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#50657c';
+    ctx.font = '700 ' + Math.max(12, g.scale * 0.28) + 'px system-ui,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('y = ' + f1(yVal), p1.x + 6, p1.y - 4);
+    ctx.restore();
+  }
+
+  function drawIntercept(b,g){
+    if(b < -g.range || b > g.range) return;
+    const p = toPx(0,b,g);
+    ctx.save();
+    ctx.fillStyle = '#0f9d58';
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,5,0,Math.PI*2);
+    ctx.fill();
+    ctx.font = '700 ' + Math.max(12, g.scale * 0.28) + 'px system-ui,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('(0, ' + f1(b) + ')', p.x + 8, p.y - 6);
+    ctx.restore();
+  }
+
+  function drawHorizontalDistance(m,b,yVal,g){
+    if(Math.abs(m) < 0.05) return {visible:false, x:null};
+
+    const x = (yVal - b) / m;
+    if(x < -g.range || x > g.range){
+      return {visible:false, x:x};
+    }
+
+    const pAxis = toPx(0,yVal,g);
+    const pGraph = toPx(x,yVal,g);
+
+    ctx.save();
+    ctx.setLineDash([8,6]);
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(pAxis.x,pAxis.y);
+    ctx.lineTo(pGraph.x,pGraph.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#22364d';
+    ctx.beginPath();
+    ctx.arc(pAxis.x,pAxis.y,4,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#b42318';
+    ctx.beginPath();
+    ctx.arc(pGraph.x,pGraph.y,5,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.font = '700 ' + Math.max(12, g.scale * 0.28) + 'px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = yVal >= 0 ? 'bottom' : 'top';
+    ctx.fillText('|x| = ' + f2(Math.abs(x)), (pAxis.x + pGraph.x) / 2, yVal >= 0 ? pAxis.y - 8 : pAxis.y + 8);
+    ctx.restore();
+
+    return {visible:true, x:x};
+  }
+
+  function updateText(m,b,yVal,helper){
+    mValue.textContent = f1(m);
+    bValue.textContent = f1(b);
+    yValue.textContent = f1(yVal);
+
+    eqText.textContent = '식: y = ' + f1(m) + 'x ' + (b >= 0 ? '+ ' : '- ') + f1(Math.abs(b));
+    pointText.textContent = '지나는 점: (0, ' + f1(b) + ')';
+
+    if(Math.abs(m) < 0.05){
+      dirText.textContent = '방향: 거의 수평';
+      steepText.textContent = '가파름: 매우 작음';
+      message.innerHTML = '<strong>관찰:</strong> 기울기가 0에 가까워 그래프가 거의 수평입니다. 그래프는 <strong>(0, ' + f1(b) + ')</strong>를 지납니다.';
+      compare.innerHTML = '<strong>생각해 보기:</strong> 기울기의 절댓값이 아주 작으면 그래프가 눕게 보이고, 같은 y값에서 y축까지의 가로거리가 커질 수 있습니다.';
+      return;
+    }
+
+    dirText.textContent = m > 0 ? '방향: 오른쪽으로 갈수록 올라감' : '방향: 오른쪽으로 갈수록 내려감';
+
+    const absM = Math.abs(m);
+    let steep = '작음';
+    if(absM >= 1.5 && absM < 3) steep = '보통';
+    if(absM >= 3) steep = '큼';
+    steepText.textContent = '가파름: ' + steep;
+
+    const x = (yVal - b) / m;
+
+    if(m > 0){
+      message.innerHTML =
+        '<strong>양수 기울기 관찰:</strong> 그래프가 오른쪽으로 갈수록 올라갑니다. ' +
+        '지금 그래프는 <strong>(0, ' + f1(b) + ')</strong>를 지나고, ' +
+        '<strong>y = ' + f1(yVal) + '</strong>일 때 <strong>x = ' + f2(x) + '</strong>입니다.';
+    } else {
+      message.innerHTML =
+        '<strong>음수 기울기 관찰:</strong> 그래프가 오른쪽으로 갈수록 내려갑니다. ' +
+        '지금 그래프는 <strong>(0, ' + f1(b) + ')</strong>를 지나고, ' +
+        '<strong>y = ' + f1(yVal) + '</strong>일 때 <strong>x = ' + f2(x) + '</strong>입니다.';
+    }
+
+    if(helper.visible){
+      compare.innerHTML =
+        '<strong>같은 y값에서 비교하기</strong><br>' +
+        '현재 높이 <strong>y = ' + f1(yVal) + '</strong>에서 그래프 위의 점은 ' +
+        '<strong>(' + f2(x) + ', ' + f1(yVal) + ')</strong>입니다.<br>' +
+        '따라서 y축까지의 가로거리는 <strong>|x| = ' + f2(Math.abs(x)) + '</strong>입니다.<br>' +
+        '같은 y절편 b에서 <strong>|m|이 커질수록 |x|가 작아져 그래프가 y축에 더 가까워집니다.</strong>';
+    } else {
+      compare.innerHTML =
+        '<strong>같은 y값에서 비교하기</strong><br>' +
+        '지금 선택한 높이에서는 만나는 점이 화면 밖에 있습니다.<br>' +
+        '그래도 식 <span class="formula">x = (y - b) ÷ m</span>으로 생각하면, ' +
+        '<strong>b를 고정</strong>했을 때 <strong>|m|이 커질수록 |x|는 작아집니다.</strong>';
+    }
+  }
+
+  function draw(){
+    const g = graphInfo();
+    clear(g);
+
+    const m = parseFloat(slopeInput.value);
+    const b = parseFloat(interceptInput.value);
+    const yVal = parseFloat(targetYInput.value);
+
+    drawGrid(g);
+    drawTargetY(yVal,g);
+    drawFunction(m,b,g);
+    drawIntercept(b,g);
+    const helper = drawHorizontalDistance(m,b,yVal,g);
+    updateText(m,b,yVal,helper);
+  }
+
+  function stopAuto(){
+    if(autoTimer){
+      clearInterval(autoTimer);
+      autoTimer = null;
+      autoBtn.textContent = '자동 비교';
+    }
+  }
+
+  function startAuto(){
+    if(autoTimer){
+      stopAuto();
+      return;
+    }
+    autoBtn.textContent = '자동 비교 멈춤';
+    const values = [-5,-4,-3,-2,-1,-0.5,0.5,1,2,3,4,5];
+    let i = 0;
+    autoTimer = setInterval(function(){
+      slopeInput.value = values[i].toFixed(1);
+      draw();
+      i = (i + 1) % values.length;
+    }, 900);
+  }
+
+  slopeInput.addEventListener('input', function(){ stopAuto(); draw(); });
+  interceptInput.addEventListener('input', function(){ stopAuto(); draw(); });
+  targetYInput.addEventListener('input', function(){ stopAuto(); draw(); });
+
+  document.querySelectorAll('button[data-m]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      stopAuto();
+      slopeInput.value = btn.getAttribute('data-m');
+      draw();
+    });
+  });
+
+  document.querySelectorAll('button[data-b]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      stopAuto();
+      interceptInput.value = btn.getAttribute('data-b');
+      draw();
+    });
+  });
+
+  autoBtn.addEventListener('click', startAuto);
+
+  resetBtn.addEventListener('click', function(){
+    stopAuto();
+    slopeInput.value = '1';
+    interceptInput.value = '0';
+    targetYInput.value = '2';
+    draw();
+  });
+
+  window.addEventListener('resize', resizeCanvas);
+
+  setTimeout(resizeCanvas, 50);
+})();
+</script>
+</body>
+</html>
